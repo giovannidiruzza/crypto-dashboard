@@ -1,5 +1,6 @@
 import React from 'react';
 import ChartCard from './ChartCard';
+import { normalizeBinanceSymbol } from '../services/binanceFuturesApi';
 
 const LAYOUT_COUNTS = {
   '1x1': 1,
@@ -17,6 +18,7 @@ const ChartGrid = ({
   maximizedChartId = null,
   indicatorConfig = {},
   liveTickerData = {},
+  binanceMetrics = {},
   onSelectSlot,
   onToggleMaximize,
   onUpdateChart,
@@ -30,6 +32,7 @@ const ChartGrid = ({
   if (maximizedChartId) {
     const maximizedChart = charts.find(c => c.id === maximizedChartId) || charts[0];
     const index = charts.findIndex(c => c.id === maximizedChartId);
+    const bSym = normalizeBinanceSymbol(maximizedChart?.symbol);
 
     return (
       <div className="w-full h-full p-1 bg-[#06080d]">
@@ -38,6 +41,7 @@ const ChartGrid = ({
           index={index !== -1 ? index : 0}
           indicatorConfig={indicatorConfig}
           liveTickerData={liveTickerData}
+          binanceMetric={binanceMetrics[bSym]}
           isActiveSlot={true}
           isMaximized={true}
           onSelectSlot={() => {}}
@@ -52,22 +56,26 @@ const ChartGrid = ({
 
   return (
     <div className={`w-full h-full p-1.5 chart-grid-${layout}`}>
-      {visibleCharts.map((chart, index) => (
-        <ChartCard
-          key={chart.id}
-          chart={chart}
-          index={index}
-          indicatorConfig={indicatorConfig}
-          liveTickerData={liveTickerData}
-          isActiveSlot={index === activeSlotIndex}
-          isMaximized={false}
-          onSelectSlot={onSelectSlot}
-          onToggleMaximize={onToggleMaximize}
-          onUpdateChart={onUpdateChart}
-          onOpenSearch={onOpenSearch}
-          onToggleFavorite={onToggleFavorite}
-        />
-      ))}
+      {visibleCharts.map((chart, index) => {
+        const bSym = normalizeBinanceSymbol(chart.symbol);
+        return (
+          <ChartCard
+            key={chart.id}
+            chart={chart}
+            index={index}
+            indicatorConfig={indicatorConfig}
+            liveTickerData={liveTickerData}
+            binanceMetric={binanceMetrics[bSym]}
+            isActiveSlot={index === activeSlotIndex}
+            isMaximized={false}
+            onSelectSlot={onSelectSlot}
+            onToggleMaximize={onToggleMaximize}
+            onUpdateChart={onUpdateChart}
+            onOpenSearch={onOpenSearch}
+            onToggleFavorite={onToggleFavorite}
+          />
+        );
+      })}
     </div>
   );
 };

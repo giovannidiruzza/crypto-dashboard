@@ -17,6 +17,7 @@ import {
   saveWatchlists, 
   saveFavorites 
 } from './services/storage';
+import { batchFetchBinanceMetrics, normalizeBinanceSymbol } from './services/binanceFuturesApi';
 
 const LAYOUT_SLOT_COUNTS = {
   '1x1': 1,
@@ -53,6 +54,10 @@ function App() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [pollingCountdown, setPollingCountdown] = useState(15);
   const [countdowns, setCountdowns] = useState(() => getCandleCountdowns());
+
+  // Binance Order Flow & Session Metrics
+  const [binanceMetrics, setBinanceMetrics] = useState({});
+  const [isLoadingBinanceMetrics, setIsLoadingBinanceMetrics] = useState(false);
 
   const pollingRef = useRef(15);
 
@@ -107,6 +112,43 @@ function App() {
 
     return () => clearInterval(timer);
   }, [loadMarketData]);
+
+  // Batch load Binance order flow metrics
+  const loadBinanceOrderFlow = useCallback(async (symbolsToFetch) => {
+    if (!symbolsToFetch || symbolsToFetch.length === 0) return;
+    setIsLoadingBinanceMetrics(true);
+    try {
+      await batchFetchBinanceMetrics(symbolsToFetch, (symbol, metric) => {
+        setBinanceMetrics(prev => ({
+          ...prev,
+          [symbol]: metric
+        }));
+      });
+    } catch (e) {
+      console.error('Error fetching Binance order flow:', e);
+    } finally {
+      setIsLoadingBinanceMetrics(false);
+    }
+  }, []);
+
+  // Update Binance metrics for visible grid charts whenever layout or charts change
+  useEffect(() => {
+    const visibleCount = LAYOUT_SLOT_COUNTS[layout] || 9;
+    const chartSymbols = charts.slice(0, visibleCount).map(c => c.symbol);
+    loadBinanceOrderFlow(chartSymbols);
+  }, [charts, layout, loadBinanceOrderFlow]);
+
+  // When ScannerDrawer is open, fetch order flow strictly for Top 10 Gainers
+  useEffect(() => {
+    if (isDrawerOpen && tickers.length > 0) {
+      const top10Gainers = [...tickers]
+        .filter(t => t.usdtVolume >= 1_000_000)
+        .sort((a, b) => b.change24h - a.change24h)
+        .slice(0, 10)
+        .map(t => t.symbol);
+      loadBinanceOrderFlow(top10Gainers);
+    }
+  }, [isDrawerOpen, tickers, loadBinanceOrderFlow]);
 
   // Save changes to LocalStorage
   useEffect(() => {
@@ -341,6 +383,7 @@ function App() {
           maximizedChartId={maximizedChartId}
           indicatorConfig={indicatorConfig}
           liveTickerData={liveTickerMap}
+          binanceMetrics={binanceMetrics}
           onSelectSlot={handleSelectSlot}
           onToggleMaximize={handleToggleMaximize}
           onUpdateChart={handleUpdateChart}
@@ -353,6 +396,16 @@ function App() {
           isOpen={isDrawerOpen}
           onClose={() => setIsDrawerOpen(false)}
           tickers={tickers}
+          binanceMetrics={binanceMetrics}
+          isLoadingMetrics={isLoadingBinanceMetrics}
+          onRefreshMetrics={() => {
+            const top10Gainers = [...tickers]
+              .filter(t => t.usdtVolume >= 1_000_000)
+              .sort((a, b) => b.change24h - a.change24h)
+              .slice(0, 10)
+              .map(t => t.symbol);
+            loadBinanceOrderFlow(top10Gainers);
+          }}
           activeSlotIndex={activeSlotIndex}
           gridSlotsCount={LAYOUT_SLOT_COUNTS[layout] || 9}
           favorites={favorites}

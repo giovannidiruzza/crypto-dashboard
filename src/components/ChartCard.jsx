@@ -21,6 +21,7 @@ const ChartCard = ({
   index,
   indicatorConfig,
   liveTickerData,
+  binanceMetric,
   isActiveSlot,
   isMaximized,
   onSelectSlot,
@@ -227,6 +228,41 @@ const ChartCard = ({
           </div>
         </div>
       </div>
+
+      {/* Binance Order Flow Session Metrics Strip */}
+      {binanceMetric && binanceMetric.isAvailable && (
+        <div className="h-6 bg-[#080c14] border-b border-white/5 px-2 flex items-center justify-between text-[10px] font-mono select-none overflow-hidden shrink-0">
+          <div className="flex items-center gap-1.5 overflow-hidden">
+            <span className="text-[9px] text-amber-400 font-bold bg-amber-400/10 px-1 py-0.2 rounded border border-amber-400/20">
+              BINANCE OF
+            </span>
+            <span 
+              className={`font-bold ${binanceMetric.deltaOIPercent >= 0 ? 'text-emerald-400' : 'text-rose-400'}`} 
+              title={`Session Open Interest: ${binanceMetric.deltaOIPercent >= 0 ? '+' : ''}${binanceMetric.deltaOIPercent.toFixed(2)}%`}
+            >
+              OI: {binanceMetric.deltaOIPercent >= 0 ? '▲+' : '▼'}{binanceMetric.deltaOIPercent.toFixed(1)}%
+            </span>
+            <span className="text-gray-600">•</span>
+            <span 
+              className={`font-bold ${binanceMetric.sessionCVD > 0 && binanceMetric.takerBuyPercent >= 51 ? 'text-cyan-300' : 'text-amber-400'}`} 
+              title={`Session CVD & Taker Buy: ${binanceMetric.takerBuyPercent.toFixed(1)}% Buy`}
+            >
+              CVD: {binanceMetric.takerBuyPercent.toFixed(0)}% Buy
+            </span>
+            <span className="text-gray-600">•</span>
+            <span 
+              className={`${binanceMetric.vwapDiffPercent >= -0.3 && binanceMetric.vwapDiffPercent <= 1.5 ? 'text-purple-300 font-bold' : 'text-gray-400'}`} 
+              title={`Distanza da Session VWAP ($${binanceMetric.sessionVWAP.toFixed(3)})`}
+            >
+              VWAP: {binanceMetric.vwapDiffPercent >= 0 ? '+' : ''}{binanceMetric.vwapDiffPercent.toFixed(1)}%
+            </span>
+          </div>
+
+          <span className={`px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider border shrink-0 ${binanceMetric.badgeColor}`}>
+            {binanceMetric.badgeLabel}
+          </span>
+        </div>
+      )}
 
       {/* Chart Canvas / TradingView Widget */}
       <div className="flex-1 w-full h-full relative">
