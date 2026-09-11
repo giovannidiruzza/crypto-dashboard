@@ -1,0 +1,162 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-primary: #080b11;
+    --bg-surface: #0e131d;
+    --bg-card: #0b0e16;
+    --border-subtle: rgba(255, 255, 255, 0.08);
+    --border-active: #00f2fe;
+    --color-accent: #00f2fe;
+    --color-gainer: #00e676;
+    --color-loser: #ff3366;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    background-color: #080b11;
+    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Custom Slim Scrollbars */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #080b11;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 242, 254, 0.4);
+  }
+}
+
+/* Multi-Chart CSS Grid Layouts */
+.chart-grid-1x1 {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  gap: 4px;
+  height: 100%;
+  width: 100%;
+}
+
+.chart-grid-2x2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  height: 100%;
+  width: 100%;
+}
+
+.chart-grid-3x2 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  height: 100%;
+  width: 100%;
+}
+
+.chart-grid-3x3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  height: 100%;
+  width: 100%;
+}
+
+.chart-grid-4x3 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  height: 100%;
+  width: 100%;
+}
+
+.chart-grid-4x4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(4, minmax(0, 1fr));
+  gap: 4px;
+  height: 100%;
+  width: 100%;
+}
+
+/* Active Slot Glow */
+.active-slot-glow {
+  border-color: #00f2fe !important;
+  box-shadow: 0 0 14px rgba(0, 242, 254, 0.35), inset 0 0 8px rgba(0, 242, 254, 0.15) !important;
+  z-index: 10;
+}
+
+/* Pulsing Candle Alert Animation */
+@keyframes pulseGlowRed {
+  0%, 100% {
+    background-color: rgba(255, 51, 102, 0.15);
+    border-color: rgba(255, 51, 102, 0.4);
+    box-shadow: 0 0 4px rgba(255, 51, 102, 0.2);
+  }
+  50% {
+    background-color: rgba(255, 51, 102, 0.35);
+    border-color: rgba(255, 51, 102, 0.9);
+    box-shadow: 0 0 10px rgba(255, 51, 102, 0.6);
+  }
+}
+
+.animate-candle-alert {
+  animation: pulseGlowRed 1s infinite ease-in-out;
+}
+
+/* Glassmorphism Backgrounds */
+.glass-panel {
+  background: rgba(14, 19, 29, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-modal {
+  background: rgba(11, 14, 22, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 242, 254, 0.1);
+}
+
+/* Neon Text Glow */
+.text-neon-cyan {
+  color: #00f2fe;
+  text-shadow: 0 0 8px rgba(0, 242, 254, 0.4);
+}
+
+.text-neon-emerald {
+  color: #00e676;
+  text-shadow: 0 0 8px rgba(0, 230, 118, 0.4);
+}
+
+.text-neon-rose {
+  color: #ff3366;
+  text-shadow: 0 0 8px rgba(255, 51, 102, 0.4);
+}
