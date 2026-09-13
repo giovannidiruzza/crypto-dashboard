@@ -223,8 +223,8 @@ export const TV_INDICATORS_LIBRARY = [
 export const UNIVERSAL_INDICATOR_PRESETS = [
   {
     id: 'vwap_session_orderflow',
-    name: '🧭 VWAP & Bande Deviazione Std (1, 2, 3) + ATR',
-    activeIds: ['vwap', 'atr', 'volume']
+    name: '🎯 VWAP Giornaliero (Bande StDev 1, 2, 3 + Volume)',
+    activeIds: ['vwap', 'volume']
   },
   {
     id: 'bullweb_ema_ribbon',

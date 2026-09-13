@@ -25,10 +25,16 @@ const IndicatorsModal = ({
     if (Array.isArray(indicatorConfig?.activeIndicatorIds)) {
       return indicatorConfig.activeIndicatorIds;
     }
-    return ['ema20', 'ema50', 'ema100', 'ema200', 'volume'];
+    return ['vwap', 'volume'];
   });
 
   const [customInputs, setCustomInputs] = useState(() => indicatorConfig?.customInputs || {
+    vwap: {
+      anchor: 'Session',
+      stdDev1: 1,
+      stdDev2: 2,
+      stdDev3: 3
+    },
     ema20: { length: 20 },
     ema50: { length: 50 },
     ema100: { length: 100 },

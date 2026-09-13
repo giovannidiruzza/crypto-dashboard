@@ -8,7 +8,7 @@ const STORAGE_KEYS = {
   CHARTS_CONFIG: 'bulldash_charts_config_v1',
   WATCHLISTS: 'bulldash_watchlists_v1',
   ACTIVE_WATCHLIST: 'bulldash_active_watchlist_v1',
-  INDICATORS: 'bulldash_indicators_v2', // v2 with full TV catalog
+  INDICATORS: 'bulldash_indicators_v3', // v3 with Daily VWAP + StDev 1,2,3 default
   SETTINGS: 'bulldash_settings_v1',
   FAVORITES: 'bulldash_favorites_v1'
 };
@@ -33,11 +33,17 @@ export const DEFAULT_CHARTS = [
   { id: 'c16', symbol: 'BITGET:ETHUSDT.P', baseCoin: 'ETH', timeframe: '5', isLocked: false, isFavorite: false }
 ];
 
-// Default Indicator Profile with TV Catalog IDs
+// Default Indicator Profile with TV Catalog IDs (Clean Daily VWAP + StDev Bands 1, 2, 3)
 export const DEFAULT_INDICATORS = {
-  presetName: 'Bull Web EMA Ribbon',
-  activeIndicatorIds: ['ema20', 'ema50', 'ema100', 'ema200', 'volume'],
+  presetName: 'VWAP Giornaliero (StDev 1, 2, 3)',
+  activeIndicatorIds: ['vwap', 'volume'],
   customInputs: {
+    vwap: {
+      anchor: 'Session',
+      stdDev1: 1,
+      stdDev2: 2,
+      stdDev3: 3
+    },
     ema20: { length: 20 },
     ema50: { length: 50 },
     ema100: { length: 100 },
