@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import TradingViewWidget from './TradingViewWidget';
 import { formatPrice, formatVolume } from '../services/bitgetApi';
+import { formatCVD, formatCurrency } from '../services/binanceFuturesApi';
 
 const TIMEFRAMES = ['1m', '5m', '15m', '30m', '1h', '4h', '1D'];
 
@@ -244,10 +245,10 @@ const ChartCard = ({
             </span>
             <span className="text-gray-600">•</span>
             <span 
-              className={`font-bold ${binanceMetric.sessionCVD > 0 && binanceMetric.takerBuyPercent >= 51 ? 'text-cyan-300' : 'text-amber-400'}`} 
-              title={`Session CVD & Taker Buy: ${binanceMetric.takerBuyPercent.toFixed(1)}% Buy`}
+              className={`font-bold ${binanceMetric.sessionCVD > 0 ? 'text-emerald-400' : binanceMetric.sessionCVD < 0 ? 'text-rose-400' : 'text-gray-400'}`} 
+              title={`CVD Giornaliero (da 00:00 UTC): ${binanceMetric.sessionCVD >= 0 ? '+' : ''}${Math.round(binanceMetric.sessionCVD).toLocaleString()} contratti (${binanceMetric.sessionCVDUsd >= 0 ? '+' : ''}${formatCurrency(binanceMetric.sessionCVDUsd)} • ${binanceMetric.takerBuyPercent.toFixed(1)}% Taker Buy)`}
             >
-              CVD: {binanceMetric.takerBuyPercent.toFixed(0)}% Buy
+              CVD: {formatCVD(binanceMetric.sessionCVD)}
             </span>
             <span className="text-gray-600">•</span>
             <span 

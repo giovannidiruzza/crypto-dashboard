@@ -27,6 +27,29 @@ export function formatCurrency(num) {
 }
 
 /**
+ * Format CVD numbers cleanly relative to 0 (+12k, -12k, +1.2M, -7.5M, 0)
+ */
+export function formatCVD(num) {
+  if (num === undefined || num === null || isNaN(num)) return '0';
+  if (num === 0) return '0';
+  const abs = Math.abs(num);
+  const sign = num > 0 ? '+' : '-';
+  if (abs >= 1_000_000_000) {
+    const v = (abs / 1_000_000_000).toFixed(1).replace(/\.0$/, '');
+    return `${sign}${v}B`;
+  }
+  if (abs >= 1_000_000) {
+    const v = (abs / 1_000_000).toFixed(1).replace(/\.0$/, '');
+    return `${sign}${v}M`;
+  }
+  if (abs >= 1_000) {
+    const v = (abs / 1_000).toFixed(1).replace(/\.0$/, '');
+    return `${sign}${v}k`;
+  }
+  return `${sign}${abs.toFixed(0)}`;
+}
+
+/**
  * Normalizes symbol to Binance USDT-M format (e.g. 'BTCUSDT', 'SOLUSDT')
  */
 export function normalizeBinanceSymbol(symbol) {
@@ -34,6 +57,11 @@ export function normalizeBinanceSymbol(symbol) {
   let clean = symbol.toUpperCase().replace(/^BITGET:|^BINANCE:|^BYBIT:|\.P$/g, '');
   if (!clean.endsWith('USDT') && !clean.endsWith('BUSD')) {
     clean += 'USDT';
+  }
+  // Map meme coins that Binance lists with 1000 prefix
+  const meme1000 = ['PEPEUSDT', 'BONKUSDT', 'FLOKIUSDT', 'LUNCUSDT', 'SHIBUSDT', 'SATSUSDT', 'RATSUSDT'];
+  if (meme1000.includes(clean)) {
+    return '1000' + clean;
   }
   return clean;
 }
@@ -52,62 +80,76 @@ export async function fetchBinanceSessionMetrics(rawSymbol) {
   }
 
   try {
-    // 32 periods of 15m = 8 hours of active intraday session
+    // Daily Session starting at 00:00:00 UTC (Order Flow zero reset)
+    const startOfDay = new Date();
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const startOfDayMs = startOfDay.getTime();
     const period = '15m';
-    const limit = 32;
 
-    const [oiRes, takerRes, klinesRes] = await Promise.all([
-      fetch(`${BINANCE_FAPI_BASE}/futures/data/openInterestHist?symbol=${symbol}&period=${period}&limit=${limit}`, {
+    // Fetch intraday klines starting from 00:00 UTC (up to 96 15m periods/day)
+    let [oiRes, klinesRes] = await Promise.all([
+      fetch(`${BINANCE_FAPI_BASE}/futures/data/openInterestHist?symbol=${symbol}&period=${period}&startTime=${startOfDayMs}&limit=100`, {
         headers: { 'Accept': 'application/json' }
       }).then(r => r.ok ? r.json() : []),
-      fetch(`${BINANCE_FAPI_BASE}/futures/data/takerlongshortRatio?symbol=${symbol}&period=${period}&limit=${limit}`, {
-        headers: { 'Accept': 'application/json' }
-      }).then(r => r.ok ? r.json() : []),
-      fetch(`${BINANCE_FAPI_BASE}/fapi/v1/klines?symbol=${symbol}&interval=${period}&limit=${limit}`, {
+      fetch(`${BINANCE_FAPI_BASE}/fapi/v1/klines?symbol=${symbol}&interval=${period}&startTime=${startOfDayMs}&limit=100`, {
         headers: { 'Accept': 'application/json' }
       }).then(r => r.ok ? r.json() : [])
     ]);
+
+    // Fallback if early in UTC day (< 2 candles)
+    if (!Array.isArray(klinesRes) || klinesRes.length < 2) {
+      klinesRes = await fetch(`${BINANCE_FAPI_BASE}/fapi/v1/klines?symbol=${symbol}&interval=${period}&limit=32`, {
+        headers: { 'Accept': 'application/json' }
+      }).then(r => r.ok ? r.json() : []);
+    }
+
+    if (!Array.isArray(oiRes) || oiRes.length < 2) {
+      oiRes = await fetch(`${BINANCE_FAPI_BASE}/futures/data/openInterestHist?symbol=${symbol}&period=${period}&limit=32`, {
+        headers: { 'Accept': 'application/json' }
+      }).then(r => r.ok ? r.json() : []);
+    }
 
     if (!Array.isArray(klinesRes) || klinesRes.length === 0) {
       throw new Error(`Symbol ${symbol} not found on Binance Futures`);
     }
 
-    // 1. Session VWAP Calculation
+    // 1. Session VWAP & 2. Daily CVD Calculation (Taker Buy - Taker Sell from 00:00 UTC)
     let cumTypicalVol = 0;
     let cumVol = 0;
     let currentPrice = parseFloat(klinesRes[klinesRes.length - 1][4]);
+
+    let sessionCVD = 0;       // Net contracts/tokens delta from daily 0
+    let sessionCVDUsd = 0;    // Net USD delta from daily 0
+    let totalBuy = 0;
+    let totalSell = 0;
+    const deltaSeries = [];
 
     for (const k of klinesRes) {
       const high = parseFloat(k[2]);
       const low = parseFloat(k[3]);
       const close = parseFloat(k[4]);
       const vol = parseFloat(k[5]);
+      const quoteVol = parseFloat(k[7]);
+      const takerBuyBase = parseFloat(k[9] || 0);
+      const takerBuyQuote = parseFloat(k[10] || 0);
+
       const typ = (high + low + close) / 3;
       cumTypicalVol += typ * vol;
       cumVol += vol;
+
+      const takerSellBase = vol - takerBuyBase;
+      const delta = 2 * takerBuyBase - vol;
+      sessionCVD += delta;
+      totalBuy += takerBuyBase;
+      totalSell += takerSellBase;
+      deltaSeries.push(delta);
+
+      const takerSellQuote = quoteVol - takerBuyQuote;
+      sessionCVDUsd += (2 * takerBuyQuote - quoteVol);
     }
 
     const sessionVWAP = cumVol > 0 ? (cumTypicalVol / cumVol) : currentPrice;
     const vwapDiffPercent = sessionVWAP > 0 ? (((currentPrice - sessionVWAP) / sessionVWAP) * 100) : 0;
-
-    // 2. Session CVD Calculation (Taker Buy - Taker Sell)
-    let sessionCVD = 0;
-    let totalBuy = 0;
-    let totalSell = 0;
-    const deltaSeries = [];
-
-    if (Array.isArray(takerRes) && takerRes.length > 0) {
-      for (const t of takerRes) {
-        const b = parseFloat(t.buyVol || 0);
-        const s = parseFloat(t.sellVol || 0);
-        const delta = b - s;
-        sessionCVD += delta;
-        totalBuy += b;
-        totalSell += s;
-        deltaSeries.push(delta);
-      }
-    }
-
     const totalVolume = totalBuy + totalSell;
     const takerBuyPercent = totalVolume > 0 ? ((totalBuy / totalVolume) * 100) : 50;
 
@@ -189,6 +231,7 @@ export async function fetchBinanceSessionMetrics(rawSymbol) {
       sessionVWAP,
       vwapDiffPercent,
       sessionCVD,
+      sessionCVDUsd,
       takerBuyPercent,
       recentCVDPositive,
       currentOIUsd,

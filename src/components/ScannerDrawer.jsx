@@ -16,7 +16,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { formatPrice, formatVolume } from '../services/bitgetApi';
-import { formatCurrency, normalizeBinanceSymbol } from '../services/binanceFuturesApi';
+import { formatCurrency, formatCVD, normalizeBinanceSymbol } from '../services/binanceFuturesApi';
 
 const VOLUME_FILTERS = [
   { label: 'Tutti i Volumi', value: 0 },
@@ -393,14 +393,16 @@ const ScannerDrawer = ({
 
                       {/* Session CVD & Taker Buy % */}
                       <span 
-                        title={`Session CVD: ${metric.sessionCVD >= 0 ? '+' : ''}${metric.sessionCVD.toFixed(0)} contratti (${metric.takerBuyPercent.toFixed(1)}% Taker Buy)`}
-                        className={`px-1 py-0.2 rounded font-bold ${
-                          metric.sessionCVD > 0 && metric.takerBuyPercent >= 51
-                            ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-800/40'
-                            : 'bg-amber-950/80 text-amber-400 border border-amber-800/40'
+                        title={`CVD Giornaliero (da 00:00 UTC): ${metric.sessionCVD >= 0 ? '+' : ''}${Math.round(metric.sessionCVD).toLocaleString()} contratti (${metric.sessionCVDUsd >= 0 ? '+' : ''}${formatCurrency(metric.sessionCVDUsd)} • ${metric.takerBuyPercent.toFixed(1)}% Taker Buy)`}
+                        className={`px-1 py-0.2 rounded font-bold border ${
+                          metric.sessionCVD > 0
+                            ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800/40'
+                            : metric.sessionCVD < 0
+                            ? 'bg-rose-950/80 text-rose-400 border-rose-800/40'
+                            : 'bg-slate-900 text-slate-400 border-slate-800'
                         }`}
                       >
-                        CVD: {metric.takerBuyPercent.toFixed(0)}% Buy
+                        CVD: {formatCVD(metric.sessionCVD)}
                       </span>
 
                       {/* Distance from VWAP */}
